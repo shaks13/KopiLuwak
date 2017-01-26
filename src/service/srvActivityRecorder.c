@@ -368,15 +368,18 @@ uint8_t ui8status  = CROSSRFID_ERROR;
 						ui8status = srvadxl363_Init (SRVADXL36X_MODE_MEASUREMENT );
 						if (CROSSRFID_SUCCESSCODE == ui8status)
 						{
-							 srvActRec_status.aeSensorContinuousStatus[KERNEL_SENSOR_ID_ACCELERO] = SRVACTREC_STATUS_ONGOING;
+							psRequest->pui8data[0] = CROSSRFID_SUCCESSCODE;
+							srvActRec_status.aeSensorContinuousStatus[KERNEL_SENSOR_ID_ACCELERO] = SRVACTREC_STATUS_ONGOING;
 						}
 						else
 						{
+							psRequest->pui8data[0] = CROSSRFID_ERROR;
 							srvActRec_status.aeSensorContinuousStatus[KERNEL_SENSOR_ID_ACCELERO] = SRVACTREC_STATUS_ERROR;
 						}
 					}
 					else if (KERNEL_ACTIONCODE_OFF == psRequest->ui8ActionId)
 					{
+						psRequest->pui8data[0] = CROSSRFID_SUCCESSCODE;
 						ui8status = srvadxl363_Init (SRVADXL36X_MODE_OFF );
 					}
 					else
@@ -385,7 +388,7 @@ uint8_t ui8status  = CROSSRFID_ERROR;
 					}
 				break;
 				case KERNEL_COMMANDCODE_GET:
-					psRequest->ui8pdata[0] = srvActRec_status.aeSensorLogStatus[KERNEL_SENSOR_ID_ACCELERO];
+					psRequest->pui8data[0] = srvActRec_status.aeSensorLogStatus[KERNEL_SENSOR_ID_ACCELERO];
 					ui8status  = CROSSRFID_SUCCESSCODE;
 				break;
 				default :
@@ -406,10 +409,10 @@ uint8_t ui8status  = CROSSRFID_ERROR;
 
 					if (KERNEL_ACTIONCODE_STATE == psRequest->ui8ActionId)
 					{
-						ui16QueueBufferMsg[0] = srvActRec_status.aeSensorActivityCounterStatus;
-						ui16QueueBufferMsg[1] = srvActRec_status.ui16Activitytime;
-						ui16QueueBufferMsg[2] = srvActRec_status.ui16NbActivity;
-						psRequest->ui8pdata =ui16QueueBufferMsg;
+						ui16QueueBufferMsg[0] = (uint16_t) srvActRec_status.aeSensorActivityCounterStatus;
+						ui16QueueBufferMsg[1] = (uint16_t) srvActRec_status.ui16Activitytime;
+						ui16QueueBufferMsg[2] = (uint16_t) srvActRec_status.ui16NbActivity;
+						psRequest->pui8data = (uint8_t *) (ui16QueueBufferMsg) ;
 						ui8status  = CROSSRFID_SUCCESSCODE;
 					}
 					else
@@ -423,10 +426,12 @@ uint8_t ui8status  = CROSSRFID_ERROR;
 						ui8status = srvActRec_EnableMotionDetection (true);
 						if (CROSSRFID_SUCCESSCODE == ui8status)
 						{
+							psRequest->pui8data[0] = CROSSRFID_SUCCESSCODE;
 							srvActRec_status.aeSensorActivityCounterStatus= SRVACTREC_STATUS_ONGOING;
 						}
 						else
 						{
+							psRequest->pui8data[0] = CROSSRFID_ERROR;
 							srvActRec_status.aeSensorActivityCounterStatus= SRVACTREC_STATUS_ERROR;
 						}
 					}
@@ -434,8 +439,12 @@ uint8_t ui8status  = CROSSRFID_ERROR;
 					{
 						srvActRec_EnableMotionDetection (false);
 						srvActRec_status.aeSensorActivityCounterStatus = SRVACTREC_STATUS_NOTDONE;
+						psRequest->pui8data[0] = CROSSRFID_SUCCESSCODE;
 					}
 
+				break;
+
+				default:
 				break;
 
 
@@ -671,7 +680,7 @@ kernel_DataExchange_Type *psDataVehicle = &sDataVehicle;
 																KERNEL_MESSAGEID_LOG,4, (uint8_t *)ui16QueueBufferMsg};
 				ui16QueueBufferMsg[0] = KERNEL_SENSOR_ID_ACCELERO;
 				ui16QueueBufferMsg[1] = (uint16_t)(srvActRec_status.aeSensorLogStatus[KERNEL_SENSOR_ID_ACCELERO]);
-
+				psDataVehicle->pui8data = (uint8_t *) (ui16QueueBufferMsg) ;
 				ui8status = CROSSRFID_MESSAGETOBEPOSTED;
 			}else {/* do nothing*/}
 
@@ -689,7 +698,7 @@ kernel_DataExchange_Type *psDataVehicle = &sDataVehicle;
 			saAccelBuffer.Zaxis[0] = (int16_t) ( ((int16_t*)pui8XYZaxis)[2]);
 #endif
 			psDataVehicle->ui8ObjectId = KERNEL_OBJECTCODE_ACCELEROMETER ;
-			psDataVehicle->ui8pdata = (uint8_t *) (ui16QueueBufferMsg) ;
+			psDataVehicle->pui8data = (uint8_t *) (ui16QueueBufferMsg) ;
 			(*sQueueItem) = (Kernel_QueueItem_struct) {   KERNEL_CREATE_RECANDSEND (KERNEL_KERNELTASKID,KERNEL_SENSORTASKID),
 															KERNEL_MESSAGEID_MEASUREREADY,4, (uint8_t *) psDataVehicle	};
 			ui8status = CROSSRFID_MESSAGETOBEPOSTED;

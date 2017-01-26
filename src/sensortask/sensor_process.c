@@ -2067,8 +2067,8 @@ uint8_t ui8status = CROSSRFID_ERROR;
 	if (CROSSRFID_SUCCESSCODE == ui8status)
 	{
 		sQueueItem->urecvsender = KERNEL_CREATE_RECANDSEND (KERNEL_SERIALTASKID,KERNEL_SENSORTASKID); /* send the response to the task*/
-		sQueueItem->ui16NbByte = 1;
-		sQueueItem->pData = CROSSRFID_SUCCESSCODE;
+		//sQueueItem->ui16NbByte = 1;
+		//sQueueItem->pData = CROSSRFID_SUCCESSCODE;
 		ui8status = CROSSRFID_MESSAGETOBEPOSTED;
 	}
 	else

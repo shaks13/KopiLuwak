@@ -16,6 +16,7 @@
 						Private variables declaration
 ===========================================================================================================*/
 kernel_DataExchange_Type aui8QueueData [2];	/* memory to store the data send to the others tasks*/
+static uint8_t aui8data[2];
 
 /*===========================================================================================================
 						Public variables declaration
@@ -97,6 +98,7 @@ Kernel_QueueItem_struct pQueueShuntItem ;
 
 
 	/* identify the different fields of the serial command*/
+	sdataobject.pui8data = aui8data;
 	srvm2m_ProcessRxMessage ( pQueueItems->pData , &sdataobject);
 
 	if (CROSSRFID_SUCCESSCODE == ui8status)
@@ -138,14 +140,13 @@ Kernel_QueueItem_struct pQueueShuntItem ;
 uint8_t serial_ProcessMeasureReady (Kernel_QueueItem_struct *pQueueItems )
 {
 kernel_DataExchange_Type *psDataVehicle = (kernel_DataExchange_Type*) pQueueItems->pData ;
-uint8_t ui8NbLoop = 0;
 int16_t *pui16AccelMeas ;
 uint8_t ui8status = CROSSRFID_SUCCESSCODE;
 
 	switch (  psDataVehicle->ui8ObjectId )
 	{
 		case KERNEL_OBJECTCODE_ACCELEROMETER :
-			pui16AccelMeas = (int16_t *) psDataVehicle->ui8pdata;
+			pui16AccelMeas = (int16_t *) psDataVehicle->pui8data;
 			srvM2M_PrintAccelmeasurement (pui16AccelMeas[0], pui16AccelMeas[1] , pui16AccelMeas[2]);
 
 		break;
@@ -175,7 +176,7 @@ kernel_DataExchange_Type *psResponse = (kernel_DataExchange_Type*) pQueueItems->
 			if (( KERNEL_ACTIONCODE_STATE == psResponse->ui8ActionId) &&
 				( KERNEL_OBJECTCODE_ACCELEROMETER == psResponse->ui8ObjectId))
 			{
-				switch (psResponse->ui8pdata[0])
+				switch (psResponse->pui8data[0])
 				{
 					case SRVACTREC_STATUS_ONGOING :
 						srvm2m_SendString ("on going \n");
@@ -190,14 +191,14 @@ kernel_DataExchange_Type *psResponse = (kernel_DataExchange_Type*) pQueueItems->
 					( KERNEL_OBJECTCODE_ACTIVITYCOUNTER == psResponse->ui8ObjectId))
 			{
 				/* see srvActRec_ProcessSerialRequest */
-				srvM2M_PrintActivityCounterStatus ((bool)pQueueItems->pData[0] , (uint16_t) pQueueItems->pData[1] ,(uint16_t) pQueueItems->pData[2]);
+				srvM2M_PrintActivityCounterStatus ((bool)psResponse->pui8data[0] , (uint16_t) psResponse->pui8data[1] ,(uint16_t) psResponse->pui8data[2]);
 			}
 			else
 			{ /* do nothing*/ }
 
 		break;
 		case KERNEL_COMMANDCODE_SET: /* when the serial host request was a set command*/
-			if ( CROSSRFID_SUCCESSCODE == psResponse->ui8pdata )
+			if ( CROSSRFID_SUCCESSCODE == psResponse->pui8data[0] )
 			{
 				srvm2m_SendString ("ok\n");
 			}

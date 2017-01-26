@@ -409,16 +409,14 @@ typedef enum
  *  Member 'ui8ObjectId' is the object of the operation
  *  @var kernel_DataExchange_Type::ui8ActionId
  *  Member 'ui8ActionId' is the action requested by the user (by e.g. "on" or "off")
- *  @var kernel_DataExchange_Type::ui16RegisterAddress
- *  Member 'ui16RegisterAddress' is the logical address of the register
- *  @var kernel_DataExchange_Type::ui16NbWordsInParams
- *  Member 'ui16NbWordsInParams' is the number of words in the parameters of the command
+ *  @var kernel_DataExchange_Type::ui8pdata
+ *  Member 'ui8pdata' is the number of words in the parameters of the command
  */
 typedef struct {
 	kernel_commandId_enum ui8CommandId ;
 	kernel_ObjectId_enum ui8ObjectId ;
 	kernel_ActionId_enum ui8ActionId ;
-	uint8_t *ui8pdata;
+	uint8_t *pui8data;
 }kernel_DataExchange_Type;
 
 

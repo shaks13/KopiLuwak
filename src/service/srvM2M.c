@@ -227,6 +227,7 @@ uint8_t saccel[6];
 	memcpy( &(ui8stringtodisplay [strlen ("status : Active     Activity time : ")]), saccel , 5);
 	prtm2m_i16ToStr(i16NbStart , 4 , saccel);
 	memcpy( &(ui8stringtodisplay [strlen ("status : Active     Activity time : aaaa NbStart : ")]), saccel , 5);
+	srvm2m_SendString (ui8stringtodisplay);
 }
 
 /***************************************************************************//**
@@ -305,7 +306,10 @@ the command format is the UTF8. a white space should be inserted between the dif
   	| set			| 	accel		|			on			|
   	| set			| 	accel		|			off			|
   	| get			| 	accel		|			state		|
-  	| get			| 	magneto		| 						|
+  	|---------------|---------------|-----------------------|
+  	| set			| 	actcount	|			on			|
+  	| set			| 	actcount	|			off			|
+  	| get			| 	actcount	|			state		|
   	|---------------|---------------|-----------------------|
 
 @n @section exchangedata_task format of the exchanged data between the task

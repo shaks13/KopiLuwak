@@ -285,6 +285,8 @@ uint8_t * pui8OperationId ;
 		else if (!memcmp(pui8ObjectId,"actcount",strlen("actcount")))
 		{
 			psdataobject->ui8ObjectId = KERNEL_OBJECTCODE_ACTIVITYCOUNTER;
+			/* retrieve the operation id */
+			pui8OperationId = pui8ObjectId + strlen("actcount") +1;
 			if (!memcmp(pui8OperationId,"on",strlen("on")))
 			{
 				psdataobject->ui8ActionId = KERNEL_ACTIONCODE_ON;
