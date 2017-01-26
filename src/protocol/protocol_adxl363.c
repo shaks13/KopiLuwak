@@ -16,7 +16,7 @@ static SPIDRV_Handle_t prtadxl363_psSpiHandle = NULL;
 uint8_t protocol_adxl363Buffer [PROTOCOL_ADXL363_BUFFERSIZE];
 
 static uint8_t prtADXL363_WriteADXL363Register (const uint8_t ui8Adress, const uint8_t ui8NbByteToWrite );
-static void prtADXL363_ReadADXL363Register (const uint8_t ui8address,const uint8_t ui8NbByteToRead, uint8_t * ui8MemStatus);
+static void prtADXL363_ReadADXL363Register (const uint8_t ui8address,const uint8_t ui8NbByteToRead, uint8_t **ui8MemStatus);
 
 
 /***************************************************************************//**
@@ -70,7 +70,7 @@ void prtadxl363_Deinit ( void )
  * @param[out] 	pui8MemStatus: pointer on the sensor response
  * @return 		none
  *****************************************************************************/
-static void prtADXL363_ReadADXL363Register (const uint8_t ui8address,const uint8_t ui8NbByteToRead, uint8_t * ui8Response)
+static void prtADXL363_ReadADXL363Register (const uint8_t ui8address,const uint8_t ui8NbByteToRead, uint8_t ** pui8Response)
 {
 
 	protocol_adxl363Buffer[0] = PROTOCOL_ADXL363CMDCODE_READ;
@@ -82,7 +82,7 @@ static void prtADXL363_ReadADXL363Register (const uint8_t ui8address,const uint8
 						protocol_adxl363Buffer,
 						ui8NbByteToRead+PROTOCOL_ADXL363_NBBYTE_READ);
 
-	(*ui8Response) = (protocol_adxl363Buffer[PROTOCOL_ADXL363_NBBYTE_READ]);
+	(*pui8Response) = &(protocol_adxl363Buffer[PROTOCOL_ADXL363_NBBYTE_READ]);
 }
 
 /**************************************************************************//**
@@ -124,10 +124,10 @@ Ecode_t estatus ;
  *****************************************************************************/
 uint8_t prtADXL363_CheckDeviceId ( void )
 {
-uint8_t pui8Response[3];
+uint8_t *pui8Response;
 uint8_t status = CROSSRFID_SUCCESSCODE;
 
-	prtADXL363_ReadADXL363Register (PROTOCOL_ADXL363_REGISTER_DEVID_AD, 1 , pui8Response);
+	prtADXL363_ReadADXL363Register (PROTOCOL_ADXL363_REGISTER_DEVID_AD, 1 , &pui8Response);
 	if (pui8Response[0] != PROTOCOL_ADXL363_ID)
 	{
 		status = CROSSRFID_INITSENSOR_ERROR;
@@ -145,8 +145,8 @@ uint8_t status = CROSSRFID_SUCCESSCODE;
 void prtadxl363_ReadXYZaxis ( uint8_t **pui8Response )
 {
 
-	(*pui8Response) = protocol_adxl363Buffer;
-	prtADXL363_ReadADXL363Register (PROTOCOL_ADXL363_REGISTER_XDATA, PROTOCOL_REGISTER_3XYZDATA_LENGTH , *pui8Response);
+	//(*pui8Response) = protocol_adxl363Buffer;
+	prtADXL363_ReadADXL363Register (PROTOCOL_ADXL363_REGISTER_XDATA, PROTOCOL_REGISTER_3XYZDATA_LENGTH , pui8Response);
 
 }
 
@@ -159,8 +159,9 @@ void prtadxl363_ReadXYZaxis ( uint8_t **pui8Response )
 void prtadxl363_ReadXYZaxisExtended ( uint8_t **pui8Response )
 {
 
-	(*pui8Response) = protocol_adxl363Buffer;
-	prtADXL363_ReadADXL363Register (PROTOCOL_ADXL363_REGISTER_XDATA_L, PROTOCOL_REGISTER_3XYZDATAEXT_LENGTH , *pui8Response);
+	//(*pui8Response) = protocol_adxl363Buffer;
+	//(*pui8Response) = &(protocol_adxl363Buffer[PROTOCOL_ADXL363_NBBYTE_READ]);
+	prtADXL363_ReadADXL363Register (PROTOCOL_ADXL363_REGISTER_XDATA_L, PROTOCOL_REGISTER_3XYZDATAEXT_LENGTH , pui8Response);
 
 }
 
@@ -172,8 +173,8 @@ void prtadxl363_ReadXYZaxisExtended ( uint8_t **pui8Response )
  *****************************************************************************/
 void prtadxl363_ReadTemperature ( uint8_t *pui8Response )
 {
-	prtADXL363_ReadADXL363Register (PROTOCOL_ADXL363_REGISTER_TEMP_L, PROTOCOL_REGISTER_TEMP_LENGTH , protocol_adxl363Buffer);
-	pui8Response = protocol_adxl363Buffer;
+	prtADXL363_ReadADXL363Register (PROTOCOL_ADXL363_REGISTER_TEMP_L, PROTOCOL_REGISTER_TEMP_LENGTH , &pui8Response);
+	//pui8Response = protocol_adxl363Buffer;
 
 }
 
@@ -188,7 +189,7 @@ void prtadxl363_ReadTemperature ( uint8_t *pui8Response )
  *****************************************************************************/
 void prtadxl363_ReadStatus ( uint8_t *pui8Response )
 {
-	prtADXL363_ReadADXL363Register (PROTOCOL_ADXL363_REGISTER_STATUS, PROTOCOL_REGISTER_STATUS_LENGTH , pui8Response);
+	prtADXL363_ReadADXL363Register (PROTOCOL_ADXL363_REGISTER_STATUS, PROTOCOL_REGISTER_STATUS_LENGTH , &pui8Response);
 }
 
 /**************************************************************************//**
@@ -236,7 +237,7 @@ prtadxl363_registers_struct	prtadxl363_registers;
 		prtadxl363_registers.ufilter.ui8filter 			= PROTOCOL_ADXL363_REGISTER_RESET_FILTER;
 		//prtadxl363_registers.ufilter.sfilter.b3ODR 		= PROTOCOL_ADXL363_ODR_50HZ;			/* Output data rate */
 		prtadxl363_registers.ufilter.sfilter.b3ODR 		= emeasfrequency;
-		prtadxl363_registers.ufilter.sfilter.brange 	= PROTOCOL_ADXL363_RANGE_8G;			/* measurement range */
+		prtadxl363_registers.ufilter.sfilter.brange 	= PROTOCOL_ADXL363_RANGE_2G;			/* measurement range */
 		prtadxl363_registers.ufilter.sfilter.bHalfBw 	= PROTOCOL_ADXL363_HALFBW_ON;			/* activate the antialliasing filter */
 		/* copy it in the com buffer */
 		pui8ByteToWrite [0] = prtadxl363_registers.ufilter.ui8filter;
@@ -288,6 +289,9 @@ prtadxl363_registers_struct	prtadxl363_registers;
 		pui8ByteToWrite [0] = prtadxl363_registers.upower.ui8power;
 		/* Write it */
 		ui8status|=prtADXL363_WriteADXL363Register (PROTOCOL_ADXL363_REGISTER_POWER_CTL, PROTOCOL_REGISTER_POWER_LENGTH );
+
+		pui8ByteToWrite [0] = 0x00;
+		ui8status|=prtADXL363_WriteADXL363Register (PROTOCOL_ADXL363_REGISTER_SELF_TEST, PROTOCOL_REGISTER_POWER_LENGTH );
 	}
 	else
 	{

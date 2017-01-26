@@ -12,13 +12,17 @@
 #include "kernel_dispatch.h"
 
 /*===========================================================================================================
+						Private functions definition
+===========================================================================================================*/
+static uint8_t kernel_ashunt[KERNEL_SHUNTID_LASTELEMENT];
+/*===========================================================================================================
 						Private functions declaration
 ===========================================================================================================*/
 static uint8_t	kernel_ParseKernelNotification 		( Kernel_QueueItem_struct *pQueueItems );
 static uint8_t 	kernel_ParseSensorNotification 		( Kernel_QueueItem_struct *pQueueItems );
 static uint8_t 	kernel_ParseRFtaskNotification 		( Kernel_QueueItem_struct *pQueueItems );
 static uint8_t 	kernel_ParseSerialtaskNotification 	( Kernel_QueueItem_struct *pQueueItems );
-
+static void 	kernel_processShunt					( Kernel_QueueItem_struct * const pQueueItems);
 /*===========================================================================================================
 						Private functions definition
 ===========================================================================================================*/
@@ -95,6 +99,7 @@ uint8_t ui8status = CROSSRFID_SUCCESSCODE;
 	return ui8status;
 }
 
+
 /***************************************************************************//**
  * @brief
  *   This function parses the received notification from the serial interface
@@ -111,6 +116,7 @@ static uint8_t kernel_ParseSerialtaskNotification (  Kernel_QueueItem_struct *pQ
 {
 uint8_t ui8status = CROSSRFID_SUCCESSCODE;
 
+
 	/* Process any events that have been latched in the notified value. */
 		switch (pQueueItems->ui16notification)
 		{
@@ -124,6 +130,11 @@ uint8_t ui8status = CROSSRFID_SUCCESSCODE;
 				//xQueueSend (sKernel_QueuePointer.pSensorQueue,pQueueItems, pdFALSE);
 			break;
 
+			case KERNEL_MESSAGEID_SHUNT:
+
+				kernel_processShunt(pQueueItems);
+
+			break;
 
 			default:
 			break;
@@ -132,6 +143,31 @@ uint8_t ui8status = CROSSRFID_SUCCESSCODE;
 	return ui8status;
 
 }
+
+
+/***************************************************************************//**
+ * @brief
+ *   This function parses the received notification from the serial interface
+ *   task and calls the dedicated function.
+ * @param[in] sQueueItems : the received notification
+ * @return 		none
+ *
+ ******************************************************************************/
+static void kernel_processShunt(Kernel_QueueItem_struct * const pQueueItems)
+{
+uint8_t ui8index =0;
+
+	ui8index = (uint8_t) pQueueItems->pData;
+	if (ui8index<KERNEL_SHUNTID_LASTELEMENT)
+	{
+		kernel_ashunt[ui8index] = KERNEL_WHICH_SENDERID(pQueueItems->urecvsender);
+	}
+	else
+	{
+		/* do nothing*/
+	}
+}
+
 /***************************************************************************//**
  * @brief
  *   This function parses the received notification from the serial interface
@@ -267,6 +303,23 @@ uint8_t ui8status = CROSSRFID_SUCCESSCODE;
 		case KERNEL_MESSAGEID_CALENDAR_EVENT:
 		/* ********************************************************** */
 			/* TODO */
+		break;
+
+		case KERNEL_MESSAGEID_MEASUREREADY :
+
+			ui8status = CROSSRFID_MESSAGETOBEPOSTED;
+			if (KERNEL_SERIALTASKID == kernel_ashunt[KERNEL_SHUNTID_MEASUREREADY])
+			{
+				pQueueItems->urecvsender = KERNEL_CREATE_RECANDSEND (KERNEL_SERIALTASKID,KERNEL_SENSORTASKID);
+			}
+			else if (KERNEL_RFFRONTENDTASKID == kernel_ashunt[KERNEL_SHUNTID_MEASUREREADY])
+			{
+				pQueueItems->urecvsender = KERNEL_CREATE_RECANDSEND (KERNEL_RFFRONTENDTASKID,KERNEL_SENSORTASKID);
+			}
+			else
+			{
+				pQueueItems->urecvsender = KERNEL_CREATE_RECANDSEND (KERNEL_SERIALTASKID,KERNEL_SENSORTASKID);
+			}
 		break;
 
 #if (APP_CHOSEN_FLAG == APP_GLUEPOT)

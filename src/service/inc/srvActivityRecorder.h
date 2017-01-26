@@ -110,6 +110,7 @@ typedef struct
 	uint16_t 	ui16NbActivity ;
 	uint8_t 	ui8FalseDetection;
 	bool 		IsAdxlLowpowerMode;
+	srvActivityRecorder_CalibrationStatus_enum 		aeSensorActivityCounterStatus;
 	srvActivityRecorder_CalibrationStatus_enum 		aeSensorCalStatus[KERNEL_SENSOR_ID_NBSENSOR];
 	srvActivityRecorder_CalibrationStatus_enum 		aeSensorLogStatus[KERNEL_SENSOR_ID_NBSENSOR];
 	srvActivityRecorder_CalibrationStatus_enum 		aeSensorContinuousStatus[KERNEL_SENSOR_ID_NBSENSOR];

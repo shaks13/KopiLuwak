@@ -144,6 +144,7 @@ typedef enum{
 	KERNEL_MESSAGEID_RELEASEBUFFER,			/*!< this message is sent by notify that the buffer can be released*/
 	KERNEL_MESSAGEID_TASKINIT_YOURSELF,		/*!< this message is sent to notify that the task has to initialize itself */
 	KERNEL_MESSAGEID_RESET,					/*!< this message is sent to notify that a reset has been requested */
+	KERNEL_MESSAGEID_SHUNT,					/*!< this message is sent to notify to the kernel that a message should be shunted*/
 #if (1 == USE_TEMPERATURE_EM4325)
 	KERNEL_MESSAGEID_TIMOUT_GETTEMP,
 #endif
@@ -213,7 +214,8 @@ typedef enum{
 	KERNEL_MESSAGEID_HOWMANYTIMEYOURUN,		/*!< this message is sent to activate the RF front end interface */
 	KERNEL_MESSAGEID_HOWMUCHTIMEYOURUN,		/*!< this message is sent to get the temperature */
 	KERNEL_MESSAGEID_CALIBRATION,			/*!< this message is sent to set or get the calibration process */
-	KERNEL_MESSAGEID_SERIALREQUEST,				/*!< this message is sent to set or get the measurement mode */
+	KERNEL_MESSAGEID_SERIALREQUEST,			/*!< this message is sent to set or get the measurement mode */
+	KERNEL_MESSAGEID_MEASUREREADY,			/*!< this message is sent to set or get the measurement mode */
 	KERNEL_MESSAGEID_LOG,					/*!< this message is sent to set or get the log */
 	KERNEL_MESSAGEID_COMPUTEFFT,			/*!< this message is sent to set or get the computation of the FFT */
 #elif (APP_CHOSEN_FLAG == APP_GLUEPOT)
@@ -383,6 +385,21 @@ typedef enum{
 }kernel_ActionId_enum;
 
 
+/**
+ *  @enum Kernel_shuntId_enum
+ *  @brief this enum contains the Id ostheshunter message. Some message can be sent to
+ *  different task and the kernel make the shunt toward the right task.
+ * */
+typedef enum
+{
+	KERNEL_SHUNTID_MEASUREREADY = 0x0,		/*!< Id of the the shunted message */
+	KERNEL_SHUNTID_LASTELEMENT ,			/*!< number of element */
+}Kernel_shuntId_enum;
+
+
+/*===========================================================================================================
+						structure definition
+===========================================================================================================*/
 
 
 /** @struct kernel_DataExchange_Type
@@ -404,9 +421,6 @@ typedef struct {
 	uint8_t *ui8pdata;
 }kernel_DataExchange_Type;
 
-/*===========================================================================================================
-						structure definition
-===========================================================================================================*/
 
 /* Structure with parameters for serial interface */
 typedef struct

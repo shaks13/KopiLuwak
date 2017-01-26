@@ -46,7 +46,7 @@ uint8_t *pui8XYZaxis;
 	{
 		switch ( emode )
 		{
-			case SRVADXL36X_MODE_MOTIONDETECTION:
+			case SRVADXL36X_MODE_MOTIONDETECTION:  /* take a look to srvActRec_EnableMotionDetection*/
 				prtadxl363_InitiateMotionDetection();
 				srvadxl363_state.ui8state = SRVADXL36X_STATE_ON;
 			break;
@@ -58,8 +58,14 @@ uint8_t *pui8XYZaxis;
 					srvadxl363_EnableDataReadyIrq (true);
 					srvadxl363_ReadAcceloMeasure (&pui8XYZaxis);		/* clean the IRQ from the point of view of the Adxl363*/
 				}
+				else
+				{ 	/* do nothing */ }
 
 
+			break;
+			case SRVADXL36X_MODE_OFF:
+				prtadxl363_SleepAdxl363 ();
+				ui8status = CROSSRFID_SUCCESSCODE;
 			break;
 			case SRVADXL36X_MODE_LOG:
 
@@ -103,6 +109,7 @@ void srvadxl363_ReadAcceloMeasure ( uint8_t **pui8XYZaxis )
 {
 
 	prtadxl363_ReadXYZaxisExtended ( pui8XYZaxis );
+	//prtadxl363_ReadXYZaxis (pui8XYZaxis);
 }
 
 /***************************************************************************//**

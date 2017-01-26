@@ -71,8 +71,11 @@ typedef enum {
 						prototype
 ===========================================================================================================*/
 void 	srvm2m_init 					( void );
-uint8_t srvm2m_ProcessRxMessage 		( uint8_t * const pui8Rxdata, uint8_t ui8nbCarac );
+uint8_t srvm2m_ProcessRxMessage 		( uint8_t * const pui8Rxdata, kernel_DataExchange_Type *psdataobject);
 void 	srvm2m_SendString				( const char* const str);
+uint8_t srvm2m_ShuntKernelMessage 		( const kernel_DataExchange_Type sdataobject, Kernel_QueueItem_struct *pQueueItem);
+void 	srvM2M_PrintAccelmeasurement 	( const int16_t i16xaxis, const int16_t i16yaxis , const int16_t i16zaxis );
+void 	srvM2M_PrintActivityCounterStatus (const bool bIsActive , const uint16_t i16ActivityTime , const uint16_t i16NbStart);
 //uint8_t srvm2m_ProcessAccelerometerOp 	( kernel_DataExchange_Type *prtM2M_SerialCommand , Kernel_QueueItem_struct *pQueueItems  );
 
 #endif /* SRVM2M_H_ */

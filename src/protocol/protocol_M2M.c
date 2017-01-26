@@ -19,7 +19,7 @@ static 	uint8_t *pui8_SystemFile =  NULL;  /* pointer on the System file structu
 static 	uint8_t *pui8_ExternalMemory =  NULL;  /* pointer on the System file structure*/
 
 //static prtM2M_RespFirstWord_union prtm2m_uRespFirstWord;
-static kernel_DataExchange_Type prtM2M_SerialCommand;
+//static kernel_DataExchange_Type prtM2M_SerialCommand;
 
 /*===========================================================================================================
 						Public variables declaration
@@ -32,11 +32,12 @@ static void 	prtm2m_ProcessReadMessage 			( uint8_t * const pui8Rxdata );
 static void 	prtm2m_ProcessWriteMessage 			( uint8_t * const pui8Rxdata );
 static void 	prtm2m_ProcessReadSystemFile 		( const uint8_t ui8SystemFileAddress , const uint8_t ui8NbWord );
 static void 	prtm2m_ProcessReadExternalMemmory	( uint8_t * const pui8Rxdata );
-#endif
+
 static uint32_t prtm2m_hexstr2int					( const char* const hex_str, size_t hex_str_length);
 static void 	prtm2m_Hex2ascii(const uint8_t* const pui8HexArray, uint8_t ui8Nbelement , uint8_t *AsciiString);
+#endif
 //static void 	prtm2m_GetSuccessSuccesCode 		( const uint8_t ui8Register, const uint8_t ui8Nbword , uint16_t *ui16SuccessCode);
-static uint8_t prtm2m_ParseRxMessage 				( uint8_t * const pui8Rxdata );
+static uint8_t 	prtm2m_ParseRxMessage 				( uint8_t * const pui8Rxdata, kernel_DataExchange_Type *psdataobject );
 
 /*===========================================================================================================
 						Private functions definition
@@ -125,6 +126,8 @@ uint32_t ui32NbByte = 0 ;
 	intuart_PutData ( pui8_ExternalMemory, ui32NbByte);
 }
 #endif
+
+#if 0
 /**************************************************************************//**
  * @brief converts the given hex string of size hex_str_length to a uint32_t.
  * 			e.g.
@@ -151,7 +154,7 @@ static uint32_t prtm2m_hexstr2int(const char* const hex_str, size_t hex_str_leng
 	sscanf(tmp_str, "%x", (int*)&result);
 	return result;
 }
-
+#endif
 
 /**************************************************************************//**
 * @brief converts the given hex array to an ASCII string
@@ -160,7 +163,7 @@ static uint32_t prtm2m_hexstr2int(const char* const hex_str, size_t hex_str_leng
 * @param[out] 	AsciiString : the ASCII string
 * @return	none
  *****************************************************************************/
-static void prtm2m_Hex2ascii(const uint8_t* const pui8HexArray, uint8_t ui8Nbelement , uint8_t *AsciiString)
+void prtm2m_Hex2ascii(const uint8_t* const pui8HexArray, uint8_t ui8Nbelement , uint8_t *AsciiString)
 {
 	char aAscii [16] = 	{'0','1','2','3','4','5','6','7', '8','9','A','B','C','D','E','F'};
 	uint8_t ui8NthHextab=0;
@@ -175,6 +178,41 @@ static void prtm2m_Hex2ascii(const uint8_t* const pui8HexArray, uint8_t ui8Nbele
 	AsciiString[ui8NthString] ='\r';
 
 }
+
+/**************************************************************************//**
+* @brief converts the given hex array to an ASCII string
+* @param[in] 	pui8HexArray : array of hexadecimal element to convert
+* @param[in] 	ui8Nbelement : number of element of the pui8HexArray
+* @param[out] 	AsciiString : the ASCII string
+* @return	none
+ *****************************************************************************/
+void prtm2m_i16ToStr (int16_t bin, unsigned char ui8Nbelement, uint8_t *AsciiString)
+{
+
+	if (bin < 0)
+    {
+		bin *= -1;
+		//IsNegative = true;
+		*(AsciiString) = '-';
+    }
+	else
+	{
+		*(AsciiString) = ' ';
+	}
+
+
+	AsciiString += ui8Nbelement+1;
+    *AsciiString = '\0';
+
+	while (ui8Nbelement--)
+	{
+		*--AsciiString = (bin % 10) + '0';
+		bin /= 10;
+	}
+
+}
+
+
 /***************************************************************************//**
  * @brief 		This function parses the received command from the serail interface
  * @note		the frame format is the next one
@@ -193,57 +231,85 @@ static void prtm2m_Hex2ascii(const uint8_t* const pui8HexArray, uint8_t ui8Nbele
  * @return 		CROSSRFID_ERROR_SERIAL_WRONGOBJECTID : the object has been recognized
  * @return 		CROSSRFID_ERROR_SERIAL_WRONGACTIONID : the action has been recognized
  ******************************************************************************/
-static uint8_t prtm2m_ParseRxMessage ( uint8_t * const pui8Rxdata )
+static uint8_t prtm2m_ParseRxMessage ( uint8_t * const pui8Rxdata, kernel_DataExchange_Type *psdataobject )
 {
 uint8_t ui8status = CROSSRFID_SUCCESSCODE;
-uint8_t * pui8ObjectId = &(pui8Rxdata[4]); /* the commmand is set or get so the next field is here*/
+uint8_t * pui8ObjectId = &(pui8Rxdata[4]); /* the command is set or get so the next field is here*/
 uint8_t * pui8OperationId ;
 
+
 	/*get the command code Id */
-	if (!memcmp(pui8Rxdata,"get",3))
+	if (!memcmp(pui8Rxdata,"get ",3))
 	{
-		prtM2M_SerialCommand.ui8CommandId = KERNEL_COMMANDCODE_GET;
+		psdataobject->ui8CommandId = KERNEL_COMMANDCODE_GET;
 	}
-	else if (!memcmp(pui8Rxdata,"set",3))
+	else if (!memcmp(pui8Rxdata,"set ",3))
 	{
-		prtM2M_SerialCommand.ui8CommandId = KERNEL_COMMANDCODE_SET;
+		psdataobject->ui8CommandId = KERNEL_COMMANDCODE_SET;
 	}
 	else
 	{
-		prtM2M_SerialCommand.ui8CommandId = KERNEL_COMMANDCODE_UNKNOWN;
+		psdataobject->ui8CommandId = KERNEL_COMMANDCODE_UNKNOWN;
 		ui8status = CROSSRFID_ERROR_SERIAL_WRONGCOMMANDID;
 	}
 
-	/* retrieve the object id */
-	if (!memcmp(pui8ObjectId,"accel",strlen("accel")))
+	if (CROSSRFID_SUCCESSCODE == ui8status)
 	{
-		prtM2M_SerialCommand.ui8ObjectId = KERNEL_OBJECTCODE_ACCELEROMETER;
+		/* retrieve the object id */
+		if (!memcmp(pui8ObjectId,"accel",strlen("accel")))
+		{
+			psdataobject->ui8ObjectId = KERNEL_OBJECTCODE_ACCELEROMETER;
 
-		/* retrieve the action id */
-		pui8OperationId = pui8ObjectId + strlen("accel") +1;
-		if (!memcmp(pui8OperationId,"on",strlen("on")))
-		{
-			prtM2M_SerialCommand.ui8ActionId = KERNEL_ACTIONCODE_ON;
+			/* retrieve the action id */
+			pui8OperationId = pui8ObjectId + strlen("accel") +1;
+			if (!memcmp(pui8OperationId,"on",strlen("on")))
+			{
+				psdataobject->ui8ActionId = KERNEL_ACTIONCODE_ON;
+			}
+			else if (!memcmp(pui8OperationId,"off",strlen("off")))
+			{
+				psdataobject->ui8ActionId = KERNEL_ACTIONCODE_OFF;
+			}
+			else if (!memcmp(pui8OperationId,"state",strlen("state")))
+			{
+				psdataobject->ui8ActionId = KERNEL_ACTIONCODE_STATE;
+			}
+			else
+			{
+				psdataobject->ui8ActionId = KERNEL_ACTIONCODE_UNKNOWN;
+				ui8status = CROSSRFID_ERROR_SERIAL_WRONGACTIONID;
+			}
+
 		}
-		else if (!memcmp(pui8OperationId,"off",strlen("off")))
+		/* retrieve the object id */
+		else if (!memcmp(pui8ObjectId,"actcount",strlen("actcount")))
 		{
-			prtM2M_SerialCommand.ui8ActionId = KERNEL_ACTIONCODE_OFF;
-		}
-		else if (!memcmp(pui8OperationId,"state",strlen("state")))
-		{
-			prtM2M_SerialCommand.ui8ActionId = KERNEL_ACTIONCODE_STATE;
+			psdataobject->ui8ObjectId = KERNEL_OBJECTCODE_ACTIVITYCOUNTER;
+			if (!memcmp(pui8OperationId,"on",strlen("on")))
+			{
+				psdataobject->ui8ActionId = KERNEL_ACTIONCODE_ON;
+			}
+			else if (!memcmp(pui8OperationId,"off",strlen("off")))
+			{
+				psdataobject->ui8ActionId = KERNEL_ACTIONCODE_OFF;
+			}
+			else if (!memcmp(pui8OperationId,"state",strlen("state")))
+			{
+				psdataobject->ui8ActionId = KERNEL_ACTIONCODE_STATE;
+			}
+			else
+			{
+				psdataobject->ui8ActionId = KERNEL_ACTIONCODE_UNKNOWN;
+				ui8status = CROSSRFID_ERROR_SERIAL_WRONGACTIONID;
+			}
+
+
 		}
 		else
 		{
-			prtM2M_SerialCommand.ui8ActionId = KERNEL_ACTIONCODE_UNKNOWN;
-			ui8status = CROSSRFID_ERROR_SERIAL_WRONGACTIONID;
+			psdataobject->ui8CommandId = KERNEL_COMMANDCODE_UNKNOWN;
+			ui8status = CROSSRFID_ERROR_SERIAL_WRONGOBJECTID;
 		}
-
-	}
-	else
-	{
-		prtM2M_SerialCommand.ui8CommandId = KERNEL_COMMANDCODE_UNKNOWN;
-		ui8status = CROSSRFID_ERROR_SERIAL_WRONGOBJECTID;
 	}
 
 	return ui8status;
@@ -334,11 +400,11 @@ void prtm2m_init ( void )
  * @return 		CROSSRFID_ERROR_SERIAL_WRONGOBJECTID : the object has been recognized
  * @return 		CROSSRFID_ERROR_SERIAL_WRONGACTIONID : the action has been recognized
  ******************************************************************************/
-uint8_t prtm2m_ProcessRxMessage ( uint8_t * const pui8Rxdata, kernel_DataExchange_Type *prtM2M_SerialCommand )
+uint8_t prtm2m_ProcessRxMessage ( uint8_t * const pui8Rxdata, kernel_DataExchange_Type *psdataobject )
 {
 uint8_t ui8status = CROSSRFID_SUCCESSCODE;
 
-	ui8status = prtm2m_ParseRxMessage (pui8Rxdata );
+	ui8status = prtm2m_ParseRxMessage (pui8Rxdata, psdataobject );
 
 	return ui8status;
 }

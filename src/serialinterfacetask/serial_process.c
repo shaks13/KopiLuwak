@@ -91,24 +91,69 @@ void serial_processEndOfWakeupMode ( void )
 uint8_t serial_ProcessM2MRxmessage (Kernel_QueueItem_struct *pQueueItems )
 {
 uint8_t ui8status = CROSSRFID_SUCCESSCODE;
-kernel_DataExchange_Type *prtM2M_SerialCommand;
+uint8_t ui8shuntstatus = CROSSRFID_SUCCESSCODE;
+kernel_DataExchange_Type sdataobject;
+Kernel_QueueItem_struct pQueueShuntItem ;
+
 
 	/* identify the different fields of the serial command*/
-	ui8status = srvm2m_ProcessRxMessage (  pQueueItems->pData ,prtM2M_SerialCommand );
+	srvm2m_ProcessRxMessage ( pQueueItems->pData , &sdataobject);
 
 	if (CROSSRFID_SUCCESSCODE == ui8status)
 	{
 		/* save the fields of the command */
-		memcpy(aui8QueueData , prtM2M_SerialCommand, strlen (prtM2M_SerialCommand));
+		memcpy(aui8QueueData , &sdataobject, sizeof (kernel_DataExchange_Type));
 		/* create the queue object */
 		pQueueItems->urecvsender = KERNEL_CREATE_RECANDSEND (KERNEL_SENSORTASKID,KERNEL_SERIALTASKID);
 		pQueueItems->ui16notification = KERNEL_MESSAGEID_SERIALREQUEST;
-		pQueueItems->pData = aui8QueueData; /* change the memory area to send the queue object*/
-		pQueueItems->ui16NbByte=strlen (prtM2M_SerialCommand);
+		pQueueItems->pData = (uint8_t*) aui8QueueData; /* change the memory area to send the queue object*/
+		pQueueItems->ui16NbByte= sizeof (kernel_DataExchange_Type);
 		ui8status = CROSSRFID_MESSAGETOBEPOSTED;
+	}
+	else
+	{
+		/* do nothing*/
+	}
+
+	ui8shuntstatus = srvm2m_ShuntKernelMessage ( sdataobject, &pQueueShuntItem);
+	if (CROSSRFID_MESSAGETOBEPOSTED == ui8shuntstatus )
+	{
+		xQueueSend (sKernel_QueuePointer.pKernelQueue,&pQueueShuntItem,0);
+	}
+	else
+	{
+		/* do nothing*/
 	}
 	return ui8status;
 
+}
+
+/***************************************************************************//**
+ * @brief 		This function is called after a serial request was sent to
+ * the serial interface. According to the response of the serial task the
+ * function sent to the serial interface the response.
+ * @param[in] pQueueItems : the received notification
+ * @return 		CROSSRFID_SUCCESSCODE :  the function is successful
+ ******************************************************************************/
+uint8_t serial_ProcessMeasureReady (Kernel_QueueItem_struct *pQueueItems )
+{
+kernel_DataExchange_Type *psDataVehicle = (kernel_DataExchange_Type*) pQueueItems->pData ;
+uint8_t ui8NbLoop = 0;
+int16_t *pui16AccelMeas ;
+uint8_t ui8status = CROSSRFID_SUCCESSCODE;
+
+	switch (  psDataVehicle->ui8ObjectId )
+	{
+		case KERNEL_OBJECTCODE_ACCELEROMETER :
+			pui16AccelMeas = (int16_t *) psDataVehicle->ui8pdata;
+			srvM2M_PrintAccelmeasurement (pui16AccelMeas[0], pui16AccelMeas[1] , pui16AccelMeas[2]);
+
+		break;
+		default :
+		break;
+	}
+
+	return ui8status;
 }
 
 
@@ -127,7 +172,8 @@ kernel_DataExchange_Type *psResponse = (kernel_DataExchange_Type*) pQueueItems->
 	switch (psResponse->ui8CommandId)
 	{
 		case KERNEL_COMMANDCODE_GET: /* when the serial request was a get command */
-			if ( KERNEL_ACTIONCODE_STATE == psResponse->ui8ActionId)
+			if (( KERNEL_ACTIONCODE_STATE == psResponse->ui8ActionId) &&
+				( KERNEL_OBJECTCODE_ACCELEROMETER == psResponse->ui8ObjectId))
 			{
 				switch (psResponse->ui8pdata[0])
 				{
@@ -139,6 +185,12 @@ kernel_DataExchange_Type *psResponse = (kernel_DataExchange_Type*) pQueueItems->
 						srvm2m_SendString ("not active \n");
 					break;
 				}
+			}
+			else if (( KERNEL_ACTIONCODE_STATE == psResponse->ui8ActionId) &&
+					( KERNEL_OBJECTCODE_ACTIVITYCOUNTER == psResponse->ui8ObjectId))
+			{
+				/* see srvActRec_ProcessSerialRequest */
+				srvM2M_PrintActivityCounterStatus ((bool)pQueueItems->pData[0] , (uint16_t) pQueueItems->pData[1] ,(uint16_t) pQueueItems->pData[2]);
 			}
 			else
 			{ /* do nothing*/ }

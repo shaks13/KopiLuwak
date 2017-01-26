@@ -23,7 +23,9 @@ static uint16_t 								ui16MagneticThreshold = SRVACTIVITYREC_MAGNETICFIELDTHRE
 static srvActivityRecorder_AxisBuffer_struct 	saAccelBuffer ;
 static int16_t 									*pai16MagnetoBuffer  ;													/* pointer to the buffer of the magnetometer measurement*/
 static uint16_t									*paui16FFTMagnetoBuffer  ;													/* pointer to the buffer of the magnetometer measurement*/
-static uint16_t									ui16QueueBufferMsg[7];	/* bufffer for queue message*/
+static uint16_t									ui16QueueBufferMsg[7];	/* buffer for queue message*/
+kernel_DataExchange_Type 						sDataVehicle;
+
 /*===========================================================================================================
 						Private functions definition
 ===========================================================================================================*/
@@ -361,7 +363,26 @@ uint8_t ui8status  = CROSSRFID_ERROR;
 			switch (psRequest->ui8CommandId)
 			{
 				case KERNEL_COMMANDCODE_SET:
+					if (KERNEL_ACTIONCODE_ON == psRequest->ui8ActionId)
+					{
+						ui8status = srvadxl363_Init (SRVADXL36X_MODE_MEASUREMENT );
+						if (CROSSRFID_SUCCESSCODE == ui8status)
+						{
+							 srvActRec_status.aeSensorContinuousStatus[KERNEL_SENSOR_ID_ACCELERO] = SRVACTREC_STATUS_ONGOING;
+						}
+						else
+						{
+							srvActRec_status.aeSensorContinuousStatus[KERNEL_SENSOR_ID_ACCELERO] = SRVACTREC_STATUS_ERROR;
+						}
+					}
+					else if (KERNEL_ACTIONCODE_OFF == psRequest->ui8ActionId)
+					{
+						ui8status = srvadxl363_Init (SRVADXL36X_MODE_OFF );
+					}
+					else
+					{
 
+					}
 				break;
 				case KERNEL_COMMANDCODE_GET:
 					psRequest->ui8pdata[0] = srvActRec_status.aeSensorLogStatus[KERNEL_SENSOR_ID_ACCELERO];
@@ -375,6 +396,50 @@ uint8_t ui8status  = CROSSRFID_ERROR;
 
 		case KERNEL_OBJECTCODE_MAGNETOMETER:
 
+		break;
+
+		case KERNEL_OBJECTCODE_ACTIVITYCOUNTER:
+
+			switch (psRequest->ui8CommandId)
+			{
+				case KERNEL_COMMANDCODE_GET:
+
+					if (KERNEL_ACTIONCODE_STATE == psRequest->ui8ActionId)
+					{
+						ui16QueueBufferMsg[0] = srvActRec_status.aeSensorActivityCounterStatus;
+						ui16QueueBufferMsg[1] = srvActRec_status.ui16Activitytime;
+						ui16QueueBufferMsg[2] = srvActRec_status.ui16NbActivity;
+						psRequest->ui8pdata =ui16QueueBufferMsg;
+						ui8status  = CROSSRFID_SUCCESSCODE;
+					}
+					else
+					{ /* do nothing */	}
+				break;
+
+				case KERNEL_COMMANDCODE_SET:
+
+					if (KERNEL_ACTIONCODE_ON == psRequest->ui8ActionId)
+					{
+						ui8status = srvActRec_EnableMotionDetection (true);
+						if (CROSSRFID_SUCCESSCODE == ui8status)
+						{
+							srvActRec_status.aeSensorActivityCounterStatus= SRVACTREC_STATUS_ONGOING;
+						}
+						else
+						{
+							srvActRec_status.aeSensorActivityCounterStatus= SRVACTREC_STATUS_ERROR;
+						}
+					}
+					else
+					{
+						srvActRec_EnableMotionDetection (false);
+						srvActRec_status.aeSensorActivityCounterStatus = SRVACTREC_STATUS_NOTDONE;
+					}
+
+				break;
+
+
+			}
 		break;
 
 		default:
@@ -557,7 +622,7 @@ uint16_t ui16MagneticField=0;
 uint8_t ui8status = CROSSRFID_SUCCESSCODE;
 uint8_t *pui8XYZaxis;
 uint16_t ui16NthPoint=0;
-
+kernel_DataExchange_Type *psDataVehicle = &sDataVehicle;
 
 	prtadxl363_ReadStatus ( &(pustatus.ui8status) ); 		/* clean the IRQ from the point of view of the Adxl363*/
 
@@ -613,6 +678,21 @@ uint16_t ui16NthPoint=0;
 		}
 		else if (SRVACTREC_STATUS_ONGOING == srvActRec_status.aeSensorContinuousStatus[KERNEL_SENSOR_ID_ACCELERO] )
 		{
+			srvadxl363_ReadAcceloMeasure (&pui8XYZaxis);						/* get the measurements*/
+			//memcpy(ui16QueueBufferMsg , pui8XYZaxis ,3*sizeof (int16_t));
+			ui16QueueBufferMsg[0] = (pui8XYZaxis[1]<<8) | pui8XYZaxis[0];
+			ui16QueueBufferMsg[1] = (pui8XYZaxis[3]<<8) | pui8XYZaxis[2];
+			ui16QueueBufferMsg[2] = (pui8XYZaxis[5]<<8) | pui8XYZaxis[4];
+#if 0
+			saAccelBuffer.Xaxis[0] = (int16_t) ( ((int16_t*)pui8XYZaxis)[0]);	/* save the measurement*/
+			saAccelBuffer.Yaxis[0] = (int16_t) ( ((int16_t*)pui8XYZaxis)[1]);
+			saAccelBuffer.Zaxis[0] = (int16_t) ( ((int16_t*)pui8XYZaxis)[2]);
+#endif
+			psDataVehicle->ui8ObjectId = KERNEL_OBJECTCODE_ACCELEROMETER ;
+			psDataVehicle->ui8pdata = (uint8_t *) (ui16QueueBufferMsg) ;
+			(*sQueueItem) = (Kernel_QueueItem_struct) {   KERNEL_CREATE_RECANDSEND (KERNEL_KERNELTASKID,KERNEL_SENSORTASKID),
+															KERNEL_MESSAGEID_MEASUREREADY,4, (uint8_t *) psDataVehicle	};
+			ui8status = CROSSRFID_MESSAGETOBEPOSTED;
 
 		}
 		else

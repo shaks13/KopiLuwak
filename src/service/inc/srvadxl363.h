@@ -57,6 +57,7 @@ typedef enum {
 	SRVADXL36X_MODE_MOTIONDETECTION = 0x00,					/*!< the mode motion detection is selected */
 	SRVADXL36X_MODE_LOG ,									/*!< the mode log is selected */
 	SRVADXL36X_MODE_MEASUREMENT ,							/*!< the mode measurement is selected */
+	SRVADXL36X_MODE_OFF ,							/*!< the sensor is deactivated */
 }srvadxl36x_Mode_enum;
 
 

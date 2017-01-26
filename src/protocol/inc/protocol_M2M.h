@@ -171,9 +171,9 @@ typedef union {
 
 void 	prtm2m_init 					( void );
 bool 	prtm2m_IsRightCommandcode 		( uint8_t * const pui8RxData );
-uint8_t prtm2m_ProcessRxMessage 		( uint8_t * const pui8Rxdata, kernel_DataExchange_Type *prtM2M_SerialCommand );
+uint8_t prtm2m_ProcessRxMessage 		( uint8_t * const pui8Rxdata, kernel_DataExchange_Type *psdataobject );
 void 	prtm2m_SendString				( const char* const str );
-
-
+void 	prtm2m_Hex2ascii				( const uint8_t* const pui8HexArray, uint8_t ui8Nbelement , uint8_t *AsciiString);
+void 	prtm2m_i16ToStr				( int16_t bin, unsigned char ui8Nbelement, uint8_t *AsciiString);
 
 #endif /* PRTM2M_H_ */

@@ -155,6 +155,9 @@ uint8_t ui8status = CROSSRFID_SUCCESSCODE;
 			ui8status = serial_ProcessSensorResponse (psQueueItem);
 		break;
 
+		case KERNEL_MESSAGEID_MEASUREREADY:
+			ui8status = serial_ProcessMeasureReady(psQueueItem);
+		break;
 		default :
 
 			/* should not happen */
@@ -243,6 +246,11 @@ uint8_t ui8status  = CROSSRFID_SUCCESSCODE;
 					case KERNEL_KERNELTASKID :
 						/* sends the message to kernel */
 						xQueueSend (sKernel_QueuePointer.pKernelQueue,&sQueueItems,0);
+					break;
+
+					case KERNEL_SENSORTASKID :
+						/* sends the message to the sensor */
+						xQueueSend (sKernel_QueuePointer.pSensorQueue,&sQueueItems,0);
 					break;
 
 					default:
