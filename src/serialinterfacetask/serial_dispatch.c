@@ -158,6 +158,11 @@ uint8_t ui8status = CROSSRFID_SUCCESSCODE;
 		case KERNEL_MESSAGEID_MEASUREREADY:
 			ui8status = serial_ProcessMeasureReady(psQueueItem);
 		break;
+
+		case KERNEL_MESSAGEID_LOG : /* now the loop measurement is now over*/
+			ui8status = serial_ProcessLogReady(psQueueItem);
+		break;
+
 		default :
 
 			/* should not happen */

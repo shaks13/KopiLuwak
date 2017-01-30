@@ -354,9 +354,9 @@ typedef enum {
  *
  */
 typedef enum{
-	KERNEL_COMMANDCODE_UNKNOWN	= 0x00,		/*!< the M2M host request a get access  */
-	KERNEL_COMMANDCODE_GET		= 0x01,		/*!< the M2M host request a get access  */
-	KERNEL_COMMANDCODE_SET 		= 0x02,		/*!< the M2M host request a set access */
+	KERNEL_COMMANDCODE_GET		= 0x00,		/*!< the M2M host request a get access  */
+	KERNEL_COMMANDCODE_SET 		,		/*!< the M2M host request a set access */
+	KERNEL_COMMANDCODE_UNKNOWN	,		/*!< the M2M host request a get access  */
 }kernel_commandId_enum;
 
 
@@ -370,6 +370,7 @@ typedef enum{
 	KERNEL_OBJECTCODE_ACCELEROMETER				,		/*!< the M2M host request an action on the accelerometer */
 	KERNEL_OBJECTCODE_MAGNETOMETER				,		/*!< the M2M host request an action on the magnetometer */
 	KERNEL_OBJECTCODE_ACTIVITYCOUNTER 			,		/*!< the M2M host request an action on the activity counter */
+	KERNEL_OBJECTCODE_FFT 			,					/*!< the M2M host request an action on the FFT functionnality */
 }kernel_ObjectId_enum;
 
 /**
@@ -393,6 +394,7 @@ typedef enum{
 typedef enum
 {
 	KERNEL_SHUNTID_MEASUREREADY = 0x0,		/*!< Id of the the shunted message */
+	KERNEL_SHUNTID_LOGREADY ,		/*!< Id of the the shunted message */
 	KERNEL_SHUNTID_LASTELEMENT ,			/*!< number of element */
 }Kernel_shuntId_enum;
 

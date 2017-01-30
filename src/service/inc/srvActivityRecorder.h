@@ -112,7 +112,7 @@ typedef struct
 	bool 		IsAdxlLowpowerMode;
 	srvActivityRecorder_CalibrationStatus_enum 		aeSensorActivityCounterStatus;
 	srvActivityRecorder_CalibrationStatus_enum 		aeSensorCalStatus[KERNEL_SENSOR_ID_NBSENSOR];
-	srvActivityRecorder_CalibrationStatus_enum 		aeSensorLogStatus[KERNEL_SENSOR_ID_NBSENSOR];
+	srvActivityRecorder_CalibrationStatus_enum 		aeSensorFFTStatus[KERNEL_SENSOR_ID_NBSENSOR];
 	srvActivityRecorder_CalibrationStatus_enum 		aeSensorContinuousStatus[KERNEL_SENSOR_ID_NBSENSOR];
 	srvActivityRecorder_CalibrationStatus_enum 		eFFTcomputationStatus;
 }srvActivityRecorder_status_struct;
@@ -149,7 +149,7 @@ void 	srvActRec_GetActivityTime 			( uint16_t  *pui16ActivityRecorder);
 void 	srvActRec_ProcessHowMuchTimeYouRun 	( uint8_t ui8ReadOrWriteAccess );
 void	srvActRec_ProcessHowManyTimeYouRun 	( uint8_t ui8ReadOrWriteAccess );
 uint8_t srvActRec_ProcessCalibration 		( Kernel_QueueItem_struct * psQueueItem );
-uint8_t srvActRec_ProcessLog 				( Kernel_QueueItem_struct * psQueueItem );
+uint8_t srvActRec_ProcessLog 				( const kernel_commandId_enum IsGetOrSetRequest, const  Kernel_Sensor_Id_enum ui16SensorId , uint8_t ** pui8Data );
 uint8_t srvActRec_ProcessComputeFFT			( Kernel_QueueItem_struct * psQueueItem );
 uint8_t srvActRec_ProcessAcceleromterIRQ 	( Kernel_QueueItem_struct *sQueueItem );
 uint8_t srvActRec_ProcessMagnetoIRQ 		( Kernel_QueueItem_struct *psQueueItem );
@@ -157,4 +157,5 @@ uint8_t srvActRec_ProcessMagnetoIRQ 		( Kernel_QueueItem_struct *psQueueItem );
 uint8_t srvActRec_EnableMotionDetection 	( bool bOnOrOff );
 uint8_t srvActRec_CalibrateAcceleroDetector ( void );
 uint8_t srvActRec_IsCalibrationIsonGoing 	( void );
+uint8_t srvActRec_ProcessSerialRequest 		( uint8_t * ui8pdata );
 #endif /* SRV_LIS2DH12_H_ */

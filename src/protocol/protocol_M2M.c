@@ -38,7 +38,7 @@ static void 	prtm2m_Hex2ascii(const uint8_t* const pui8HexArray, uint8_t ui8Nbel
 #endif
 //static void 	prtm2m_GetSuccessSuccesCode 		( const uint8_t ui8Register, const uint8_t ui8Nbword , uint16_t *ui16SuccessCode);
 static uint8_t 	prtm2m_ParseRxMessage 				( uint8_t * const pui8Rxdata, kernel_DataExchange_Type *psdataobject );
-
+static uint8_t prtm2m_GetActionId					( const uint8_t const * pui8OperationId , kernel_ActionId_enum *eActionId);
 /*===========================================================================================================
 						Private functions definition
 ===========================================================================================================*/
@@ -212,6 +212,37 @@ void prtm2m_i16ToStr (int16_t bin, unsigned char ui8Nbelement, uint8_t *AsciiStr
 
 }
 
+/**************************************************************************//**
+ * @brief 		This function identifies the action Id from the serial command
+ * @param[in]  	pui8OperationId : system file address
+ * @param[out] 	eActionId :  Id ofthe action retrieved from thes erial command
+ * @return 		CROSSRFID_ERROR_SERIAL_WRONGACTIONID
+ * @return 		CROSSRFID_SUCCESSCODE
+ *****************************************************************************/
+static uint8_t prtm2m_GetActionId ( const uint8_t const * pui8OperationId , kernel_ActionId_enum *eActionId)
+{
+uint8_t ui8status = CROSSRFID_SUCCESSCODE;
+
+	if (!memcmp(pui8OperationId,"on",strlen("on")))
+	{
+		*eActionId = KERNEL_ACTIONCODE_ON;
+	}
+	else if (!memcmp(pui8OperationId,"off",strlen("off")))
+	{
+		*eActionId = KERNEL_ACTIONCODE_OFF;
+	}
+	else if (!memcmp(pui8OperationId,"state",strlen("state")))
+	{
+		*eActionId = KERNEL_ACTIONCODE_STATE;
+	}
+	else
+	{
+		*eActionId = KERNEL_ACTIONCODE_UNKNOWN;
+		ui8status = CROSSRFID_ERROR_SERIAL_WRONGACTIONID;
+	}
+	return ui8status;
+
+}
 
 /***************************************************************************//**
  * @brief 		This function parses the received command from the serail interface
@@ -262,6 +293,7 @@ uint8_t * pui8OperationId ;
 
 			/* retrieve the action id */
 			pui8OperationId = pui8ObjectId + strlen("accel") +1;
+#if 0
 			if (!memcmp(pui8OperationId,"on",strlen("on")))
 			{
 				psdataobject->ui8ActionId = KERNEL_ACTIONCODE_ON;
@@ -279,6 +311,9 @@ uint8_t * pui8OperationId ;
 				psdataobject->ui8ActionId = KERNEL_ACTIONCODE_UNKNOWN;
 				ui8status = CROSSRFID_ERROR_SERIAL_WRONGACTIONID;
 			}
+#else
+			ui8status = prtm2m_GetActionId (pui8OperationId, &(psdataobject->ui8ActionId));
+#endif
 
 		}
 		/* retrieve the object id */
@@ -287,6 +322,7 @@ uint8_t * pui8OperationId ;
 			psdataobject->ui8ObjectId = KERNEL_OBJECTCODE_ACTIVITYCOUNTER;
 			/* retrieve the operation id */
 			pui8OperationId = pui8ObjectId + strlen("actcount") +1;
+#if 0
 			if (!memcmp(pui8OperationId,"on",strlen("on")))
 			{
 				psdataobject->ui8ActionId = KERNEL_ACTIONCODE_ON;
@@ -304,8 +340,36 @@ uint8_t * pui8OperationId ;
 				psdataobject->ui8ActionId = KERNEL_ACTIONCODE_UNKNOWN;
 				ui8status = CROSSRFID_ERROR_SERIAL_WRONGACTIONID;
 			}
-
-
+#else
+			ui8status = prtm2m_GetActionId (pui8OperationId, &(psdataobject->ui8ActionId));
+#endif
+		}
+		/* retrieve the object id */
+		else if (!memcmp(pui8ObjectId,"fft",strlen("fft")))
+		{
+			psdataobject->ui8ObjectId = KERNEL_OBJECTCODE_FFT;
+			//pui8OperationId = pui8ObjectId + strlen("log") +1;
+#if 0
+			if (!memcmp(pui8OperationId,"on",strlen("on")))
+			{
+				psdataobject->ui8ActionId = KERNEL_ACTIONCODE_ON;
+			}
+			else if (!memcmp(pui8OperationId,"off",strlen("off")))
+			{
+				psdataobject->ui8ActionId = KERNEL_ACTIONCODE_OFF;
+			}
+			else if (!memcmp(pui8OperationId,"state",strlen("state")))
+			{
+				psdataobject->ui8ActionId = KERNEL_ACTIONCODE_STATE;
+			}
+			else
+			{
+				psdataobject->ui8ActionId = KERNEL_ACTIONCODE_UNKNOWN;
+				ui8status = CROSSRFID_ERROR_SERIAL_WRONGACTIONID;
+			}
+#else
+			ui8status = prtm2m_GetActionId ((pui8ObjectId + strlen("log") +1), &(psdataobject->ui8ActionId));
+#endif
 		}
 		else
 		{

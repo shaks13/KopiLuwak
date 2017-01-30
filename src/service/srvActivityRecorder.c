@@ -14,7 +14,7 @@
 #if (APP_CHOSEN_FLAG == APP_ACTIVITYCOUNTER)
 
 
-#define SRVACT_COMPUTEFFT 	 1		/* compute the FFT of the logs of the magnetometer and the accellerometer*/
+#define SRVACT_COMPUTEFFT 	 1		/* compute the FFT of the logs of the magnetometer and the accelerometer*/
 /*===========================================================================================================
 						Private variables definition
 ===========================================================================================================*/
@@ -383,12 +383,10 @@ uint8_t ui8status  = CROSSRFID_ERROR;
 						ui8status = srvadxl363_Init (SRVADXL36X_MODE_OFF );
 					}
 					else
-					{
-
-					}
+					{ /* do nothing */}
 				break;
 				case KERNEL_COMMANDCODE_GET:
-					psRequest->pui8data[0] = srvActRec_status.aeSensorLogStatus[KERNEL_SENSOR_ID_ACCELERO];
+					psRequest->pui8data[0] = srvActRec_status.aeSensorContinuousStatus[KERNEL_SENSOR_ID_ACCELERO];
 					ui8status  = CROSSRFID_SUCCESSCODE;
 				break;
 				default :
@@ -451,6 +449,35 @@ uint8_t ui8status  = CROSSRFID_ERROR;
 			}
 		break;
 
+		case KERNEL_OBJECTCODE_FFT:
+			switch (psRequest->ui8CommandId)
+			{
+				case KERNEL_COMMANDCODE_GET:
+					if (KERNEL_ACTIONCODE_STATE == psRequest->ui8ActionId)
+					{
+						psRequest->pui8data[0] = srvActRec_status.aeSensorFFTStatus[KERNEL_SENSOR_ID_ACCELERO];
+						ui8status  = CROSSRFID_SUCCESSCODE;
+					}
+					else {/* do nothing */}
+				break;
+				case KERNEL_COMMANDCODE_SET:
+					if (KERNEL_ACTIONCODE_ON == psRequest->ui8ActionId)
+					{
+						srvActRec_ProcessLog(KERNEL_COMMANDCODE_SET , KERNEL_SENSOR_ID_ACCELERO , &psRequest->pui8data);
+					}
+					else if (KERNEL_ACTIONCODE_OFF == psRequest->ui8ActionId)
+					{
+
+					}
+					else
+					{ /* do nothing */}
+
+				break;
+				default:
+				break;
+			}
+		break;
+
 		default:
 			/*should not happen*/
 		break;
@@ -464,19 +491,18 @@ uint8_t ui8status  = CROSSRFID_ERROR;
  * sensor. The sensor is configured to run autonomously and send a IRQ when
  * a measurement is available.
  *
- * @param[in] 	psQueueItem : the incoming and outgoing queue message
- * @param[out] 	none
+ * @param[in/out] 	pui8Data : the incoming and outgoing queue message
  * @return 		CROSSRFID_MESSAGETOBEPOSTED : a queue message should be posted
 *******************************************************************************/
-uint8_t srvActRec_ProcessLog ( Kernel_QueueItem_struct * psQueueItem )
+uint8_t srvActRec_ProcessLog (const kernel_commandId_enum IsGetOrSetRequest, const  Kernel_Sensor_Id_enum ui16SensorId , uint8_t ** pui8Data )
 {
-uint16_t IsGetOrSetRequest = (uint16_t ) *( (uint16_t *)(psQueueItem->pData) );
-uint16_t ui16SensorId = (uint16_t ) *( (uint16_t *)(psQueueItem->pData+2) );
+//uint16_t IsGetOrSetRequest = (uint16_t ) *( (uint16_t *)((*pui8Data)) );
+//uint16_t ui16SensorId = (uint16_t ) *( (uint16_t *)((*pui8Data)+2) );
 uint8_t ui8status  = CROSSRFID_MESSAGETOBEPOSTED;
 uint8_t *pui8XYZaxis;
 
-	if (( SRVACTREC_SYSTEMFILE_WRITEACCESSBITFIELD == IsGetOrSetRequest) &&  /* the calibration should be launched*/
-		  srvActRec_status.aeSensorLogStatus[ui16SensorId] != SRVACTREC_STATUS_ONGOING)	/* and the calibration is not on going*/
+	if (( KERNEL_COMMANDCODE_SET == IsGetOrSetRequest) &&  /* the calibration should be launched*/
+		  srvActRec_status.aeSensorFFTStatus[ui16SensorId] != SRVACTREC_STATUS_ONGOING)	/* and the calibration is not on going*/
 	{
 		switch (ui16SensorId)
 		{
@@ -486,14 +512,14 @@ uint8_t *pui8XYZaxis;
 				ui8status = srvadxl363_InitLogMeasurement (true);		/* configure the sensor and activate the IRQ*/
 				if (CROSSRFID_SUCCESSCODE == ui8status)
 				{
-					srvActRec_status.aeSensorLogStatus[ui16SensorId] = SRVACTREC_STATUS_ONGOING;
+					srvActRec_status.aeSensorFFTStatus[ui16SensorId] = SRVACTREC_STATUS_ONGOING;
 					srvadxl363_EnableDataReadyIrq (true);
 					//prtadxl363_ReadStatus ( &(pui8XYZaxis) ); 		/* clean the IRQ from the point of view of the Adxl363*/
 					srvadxl363_ReadAcceloMeasure (&pui8XYZaxis);		/* clean the IRQ from the point of view of the Adxl363*/
 				}
 				else
 				{
-					srvActRec_status.aeSensorLogStatus[ui16SensorId] = SRVACTREC_STATUS_ERROR;
+					srvActRec_status.aeSensorFFTStatus[ui16SensorId] = SRVACTREC_STATUS_ERROR;
 				}
 
 			break;
@@ -503,11 +529,11 @@ uint8_t *pui8XYZaxis;
 				ui8status = srvActRec_InitLogMagneticField ();	/* configure the sensor and activate the IRQ*/
 				if (CROSSRFID_SUCCESSCODE == ui8status)
 				{
-					srvActRec_status.aeSensorLogStatus[ui16SensorId] = SRVACTREC_STATUS_ONGOING;
+					srvActRec_status.aeSensorFFTStatus[ui16SensorId] = SRVACTREC_STATUS_ONGOING;
 				}
 				else
 				{
-					srvActRec_status.aeSensorLogStatus[ui16SensorId] = SRVACTREC_STATUS_ERROR;
+					srvActRec_status.aeSensorFFTStatus[ui16SensorId] = SRVACTREC_STATUS_ERROR;
 				}
 			break;
 
@@ -521,12 +547,12 @@ uint8_t *pui8XYZaxis;
 
 
 	ui16QueueBufferMsg[0] = ui16SensorId;
-	ui16QueueBufferMsg[1] = (uint16_t)srvActRec_status.aeSensorLogStatus[ui16SensorId];
+	ui16QueueBufferMsg[1] = (uint16_t)srvActRec_status.aeSensorFFTStatus[ui16SensorId];
 	/* fill the message */
-	psQueueItem->urecvsender = KERNEL_CREATE_RECANDSEND (KERNEL_RFFRONTENDTASKID,KERNEL_SENSORTASKID);
-	psQueueItem->ui16NbByte = 4;
-	psQueueItem->ui16notification = KERNEL_MESSAGEID_LOG;
-	psQueueItem->pData = (uint8_t*) ui16QueueBufferMsg;
+	//psQueueItem->urecvsender = KERNEL_CREATE_RECANDSEND (KERNEL_RFFRONTENDTASKID,KERNEL_SENSORTASKID);
+	//psQueueItem->ui16NbByte = 4;
+	//psQueueItem->ui16notification = KERNEL_MESSAGEID_LOG;
+	(*pui8Data) = (uint8_t*) ui16QueueBufferMsg;
 
 	ui8status = CROSSRFID_MESSAGETOBEPOSTED;
 	return ui8status;
@@ -553,7 +579,7 @@ int8_t *i8pfftdata;
 
 
 	if (( SRVACTREC_SYSTEMFILE_WRITEACCESSBITFIELD == IsGetOrSetRequest) &&  /* the calibration should be launched*/
-		  srvActRec_status.aeSensorLogStatus[ui16SensorId] == SRVACTREC_STATUS_DONE)	/* and the log is now over*/
+		  srvActRec_status.aeSensorFFTStatus[ui16SensorId] == SRVACTREC_STATUS_DONE)	/* and the log is now over*/
 	{
 		srvActRec_status.eFFTcomputationStatus  = SRVACTREC_STATUS_NOTDONE;
 		switch (ui16SensorId)				/* select the right sensor*/
@@ -604,7 +630,7 @@ int8_t *i8pfftdata;
 
 
 	/* fill the message */
-	(*psQueueItem) = (Kernel_QueueItem_struct) {   KERNEL_CREATE_RECANDSEND (KERNEL_RFFRONTENDTASKID,KERNEL_SENSORTASKID),
+	(*psQueueItem) = (Kernel_QueueItem_struct) {   KERNEL_CREATE_RECANDSEND (KERNEL_KERNELTASKID,KERNEL_SENSORTASKID),
 													KERNEL_MESSAGEID_COMPUTEFFT,4, (uint8_t *)ui16QueueBufferMsg};
 	ui16QueueBufferMsg[0] = ui16SensorId;
 	ui16QueueBufferMsg[1] = srvActRec_status.eFFTcomputationStatus;
@@ -662,7 +688,7 @@ kernel_DataExchange_Type *psDataVehicle = &sDataVehicle;
 		prtadxl363_EnableLowPowerMotionDetection ();
 	}
 #else
-		if ( SRVACTREC_STATUS_ONGOING == srvActRec_status.aeSensorLogStatus[KERNEL_SENSOR_ID_ACCELERO] )	/* the log is on going */
+		if ( SRVACTREC_STATUS_ONGOING == srvActRec_status.aeSensorFFTStatus[KERNEL_SENSOR_ID_ACCELERO] )	/* the log is on going */
 		{
 
 			srvadxl363_ReadAcceloMeasure (&pui8XYZaxis);										/* get the measurements*/
@@ -675,11 +701,11 @@ kernel_DataExchange_Type *psDataVehicle = &sDataVehicle;
 			{
 				srvadxl363_EnableMotionIrq (false);
 				srvadxl363_InitLogMeasurement (false);
-				srvActRec_status.aeSensorLogStatus[KERNEL_SENSOR_ID_ACCELERO] = SRVACTREC_STATUS_DONE;
-				(*sQueueItem) = (Kernel_QueueItem_struct) {   KERNEL_CREATE_RECANDSEND (KERNEL_RFFRONTENDTASKID,KERNEL_SENSORTASKID),
+				srvActRec_status.aeSensorFFTStatus[KERNEL_SENSOR_ID_ACCELERO] = SRVACTREC_STATUS_DONE;
+				(*sQueueItem) = (Kernel_QueueItem_struct) {   KERNEL_CREATE_RECANDSEND (KERNEL_KERNELTASKID,KERNEL_SENSORTASKID),
 																KERNEL_MESSAGEID_LOG,4, (uint8_t *)ui16QueueBufferMsg};
 				ui16QueueBufferMsg[0] = KERNEL_SENSOR_ID_ACCELERO;
-				ui16QueueBufferMsg[1] = (uint16_t)(srvActRec_status.aeSensorLogStatus[KERNEL_SENSOR_ID_ACCELERO]);
+				ui16QueueBufferMsg[1] = (uint16_t)(srvActRec_status.aeSensorFFTStatus[KERNEL_SENSOR_ID_ACCELERO]);
 				psDataVehicle->pui8data = (uint8_t *) (ui16QueueBufferMsg) ;
 				ui8status = CROSSRFID_MESSAGETOBEPOSTED;
 			}else {/* do nothing*/}
@@ -763,7 +789,7 @@ static uint16_t ui16NbMeas=0;
 		prtlis3mdh_InitiateMagneticFieldLog (false);
 		prtlis3mdh_EnablePowerSuppply (false);
 
-		srvActRec_status.aeSensorLogStatus[KERNEL_SENSOR_ID_MAGNETO] = SRVACTREC_STATUS_DONE;
+		srvActRec_status.aeSensorFFTStatus[KERNEL_SENSOR_ID_MAGNETO] = SRVACTREC_STATUS_DONE;
 
 #if (SRVACT_COMPUTEFFT == 1)
 		/* compute the FFT*/
@@ -775,7 +801,7 @@ static uint16_t ui16NbMeas=0;
 
 		psQueueItem->ui16NbByte = 4;
 		ui16QueueBufferMsg[0] = KERNEL_SENSOR_ID_MAGNETO;
-		ui16QueueBufferMsg[1] = (uint16_t)srvActRec_status.aeSensorLogStatus[KERNEL_SENSOR_ID_MAGNETO];
+		ui16QueueBufferMsg[1] = (uint16_t)srvActRec_status.aeSensorFFTStatus[KERNEL_SENSOR_ID_MAGNETO];
 		psQueueItem->pData = (uint8_t*) ui16QueueBufferMsg;
 		psQueueItem->ui16notification = KERNEL_MESSAGEID_LOG;
 		/* fill the message */

@@ -48,5 +48,6 @@ void 	serial_processEndOfWakeupMode 			( void );
 uint8_t serial_ProcessM2MRxmessage 				( Kernel_QueueItem_struct *pQueueItems );
 uint8_t serial_ProcessSensorResponse 			( Kernel_QueueItem_struct *pQueueItems );
 uint8_t serial_ProcessMeasureReady 				( Kernel_QueueItem_struct *pQueueItems );
+uint8_t serial_ProcessLogReady 					( Kernel_QueueItem_struct *pQueueItems );
 #endif
 

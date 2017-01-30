@@ -17,6 +17,7 @@
 ===========================================================================================================*/
 kernel_DataExchange_Type aui8QueueData [2];	/* memory to store the data send to the others tasks*/
 static uint8_t aui8data[2];
+static uint16_t aui16data[3];
 
 /*===========================================================================================================
 						Public variables declaration
@@ -157,6 +158,44 @@ uint8_t ui8status = CROSSRFID_SUCCESSCODE;
 	return ui8status;
 }
 
+/***************************************************************************//**
+ * @brief 		this function is called when the loop measurement is over and
+ * the sensor task sent a message to inform the serial task. The task will send
+ * a new message to request the FFT measurement of the data.
+ * @param[in/out] pQueueItems : the received notification
+ * @return 		CROSSRFID_SUCCESSCODE :  the function is successful
+ * @return 		CROSSRFID_MESSAGETOBEPOSTED :  the function is successful and
+ * the compuationoftheFFT can be started.
+ ******************************************************************************/
+uint8_t serial_ProcessLogReady (Kernel_QueueItem_struct *pQueueItems )
+{
+uint16_t ui16sensorID = (uint16_t*)pQueueItems->pData[0]; //ui16QueueBufferMsg[0] = KERNEL_SENSOR_ID_ACCELERO;
+uint16_t ui16statusID = (uint16_t*)pQueueItems->pData[1]; // ui16QueueBufferMsg[1] = (uint16_t)(srvActRec_status.aeSensorFFTStatus[KERNEL_SENSOR_ID_ACCELERO]);
+uint8_t ui8status = CROSSRFID_SUCCESSCODE;
+
+	/*when the loop measurement is over*/
+	if ( (KERNEL_SENSOR_ID_ACCELERO == ui16sensorID) &&
+		(SRVACTREC_STATUS_DONE == ui16statusID))
+{
+		uint8_t ui8status = CROSSRFID_MESSAGETOBEPOSTED;
+		aui16data [0]= KERNEL_COMMANDCODE_SET; 				/* add the write operation */
+		aui16data [1]= KERNEL_SENSOR_ID_ACCELERO;			/* add the sensor ID */
+		aui16data [2]= KERNEL_MEASID_XRAWAXIS ;				/* add the measurement ID */
+
+		(*pQueueItems) = (Kernel_QueueItem_struct) {   KERNEL_CREATE_RECANDSEND (KERNEL_SENSORTASKID,KERNEL_SERIALTASKID),
+														KERNEL_MESSAGEID_COMPUTEFFT,4, (uint8_t *)aui16data};
+
+		srvm2m_SendString ("The measurement is now over. the FFT computation is going to start \n");
+
+	}
+	else
+	{
+		srvm2m_SendString ("Error: The measurement is now over but the status is not the one expected \n");
+	}
+
+	return ui8status;
+
+}
 
 /***************************************************************************//**
  * @brief 		This function is called after a serial request was sent to

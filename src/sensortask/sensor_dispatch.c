@@ -233,8 +233,13 @@ uint8_t ui8status = CROSSRFID_SUCCESSCODE;
 		/* ******************************************************************* */
 			ui8status = sensor_ProcessSerialRequest ( psQueueItem);
 		break;
+
+		case KERNEL_MESSAGEID_COMPUTEFFT :
+			ui8status = srvActRec_ProcessComputeFFT ( psQueueItem);
+		break;
 		default:
 		break;
+
 	}
 
 	return ui8status;
@@ -398,7 +403,8 @@ uint8_t ui8status = CROSSRFID_SUCCESSCODE;
 		break;
 
 		case KERNEL_MESSAGEID_LOG :
-			ui8status = srvActRec_ProcessLog ( psQueueItem);
+			ui8status = srvActRec_ProcessLog ( ( kernel_commandId_enum )psQueueItem->pData[0], (Kernel_Sensor_Id_enum) psQueueItem->pData[2] , &(psQueueItem->pData));
+			psQueueItem->urecvsender = KERNEL_CREATE_RECANDSEND (KERNEL_RFFRONTENDTASKID,KERNEL_SENSORTASKID);
 		break;
 		case KERNEL_MESSAGEID_COMPUTEFFT :
 			ui8status = srvActRec_ProcessComputeFFT ( psQueueItem);

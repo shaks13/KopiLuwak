@@ -187,7 +187,7 @@ uint8_t srvm2m_ShuntKernelMessage ( const kernel_DataExchange_Type sdataobject, 
 uint8_t ui8status = CROSSRFID_SUCCESSCODE;
 
 	(*pQueueItem) = (Kernel_QueueItem_struct) {   KERNEL_CREATE_RECANDSEND (KERNEL_KERNELTASKID,KERNEL_SERIALTASKID),
-													KERNEL_STAYWAKEUP,1,KERNEL_SHUNTID_MEASUREREADY	};
+													KERNEL_MESSAGEID_SHUNT,1,KERNEL_SHUNTID_MEASUREREADY	};
 
 	if ( (KERNEL_COMMANDCODE_SET == sdataobject.ui8CommandId) &&
 		 (KERNEL_OBJECTCODE_ACCELEROMETER == sdataobject.ui8ObjectId) &&

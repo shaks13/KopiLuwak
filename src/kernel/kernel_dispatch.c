@@ -14,7 +14,7 @@
 /*===========================================================================================================
 						Private functions definition
 ===========================================================================================================*/
-static uint8_t kernel_ashunt[KERNEL_SHUNTID_LASTELEMENT];
+static uint8_t kernel_ashunt[KERNEL_SHUNTID_LASTELEMENT]={KERNEL_SERIALTASKID,KERNEL_SERIALTASKID};
 /*===========================================================================================================
 						Private functions declaration
 ===========================================================================================================*/
@@ -157,7 +157,7 @@ static void kernel_processShunt(Kernel_QueueItem_struct * const pQueueItems)
 {
 uint8_t ui8index =0;
 
-	ui8index = (uint8_t) pQueueItems->pData;
+	ui8index = (uint8_t) *(pQueueItems->pData);
 	if (ui8index<KERNEL_SHUNTID_LASTELEMENT)
 	{
 		kernel_ashunt[ui8index] = KERNEL_WHICH_SENDERID(pQueueItems->urecvsender);
@@ -193,19 +193,19 @@ uint8_t ui8status = CROSSRFID_SUCCESSCODE;
 		/* ******************************************************************************** */
 		case KERNEL_MESSAGEID_GIVESAMPLES: /* Comm buffer message "DOWNLAOD data" 			*/
 		/* ******************************************************************************** */
-		case KERNEL_MESSAGEID_ACQMODE: /* Transfers the Serial acknowledge message to rf task */
+		case KERNEL_MESSAGEID_ACQMODE: /* Transfers the Serial acknowledge message to RF task */
 		/* ******************************************************************************** */
-		case KERNEL_MESSAGEID_ACQPERIOD: /* Transfers the Serial acknowledge message to rf task */
+		case KERNEL_MESSAGEID_ACQPERIOD: /* Transfers the Serial acknowledge message to RF task */
 		/* ******************************************************************************** */
-		case KERNEL_MESSAGEID_ACQBEGIN: /* Transfers the Serial acknowledge message to rf task */
+		case KERNEL_MESSAGEID_ACQBEGIN: /* Transfers the Serial acknowledge message to RF task */
 		/* ******************************************************************************** */
-		case KERNEL_MESSAGEID_ACQEND:/* Transfers the Serial acknowledge message to rf task */
+		case KERNEL_MESSAGEID_ACQEND:/* Transfers the Serial acknowledge message to RF task */
 		/* ******************************************************************************** */
-		case KERNEL_MESSAGEID_ACQTHRESHOLD:/* Transfers the Serial acknowledge message to rf task */
+		case KERNEL_MESSAGEID_ACQTHRESHOLD:/* Transfers the Serial acknowledge message to RF task */
 		/* ******************************************************************************** */
-		case KERNEL_MESSAGEID_ENABLEALARM:/* Transfers the Serial acknowledge message to rf task */
+		case KERNEL_MESSAGEID_ENABLEALARM:/* Transfers the Serial acknowledge message to RF task */
 		/* ******************************************************************************** */
-		case KERNEL_MESSAGEID_RESETALARM: /* Transfers the content of the external eeprom if the reset is successful */
+		case KERNEL_MESSAGEID_RESETALARM: /* Transfers the content of the external EEPROM if the reset is successful */
 		/* ******************************************************************************** */
 #if (1 == USE_TEMPERATURE_EM4325)
 		case KERNEL_MESSAGEID_TIMOUT_GETTEMP: /* Serial did not take the semaphore */
@@ -230,7 +230,7 @@ uint8_t ui8status = CROSSRFID_SUCCESSCODE;
 		break;
 
 		/* ******************************************************************************** */
-		case KERNEL_MESSAGEID_UPDATEALARMSTATE: /* rf task must change the Alarm state system file			*/
+		case KERNEL_MESSAGEID_UPDATEALARMSTATE: /* RF task must change the Alarm state system file			*/
 												/* according to the data read in external eeprom by serial 	*/
 		/* ******************************************************************************** */
 #if (APP_CHOSEN_FLAG == APP_GLUEPOT)
@@ -249,7 +249,7 @@ uint8_t ui8status = CROSSRFID_SUCCESSCODE;
 			}
 			else
 			{
-				/* Do not send the KERNEL_MESSAGEID_UPDATEALARMSTATE to rf task to not
+				/* Do not send the KERNEL_MESSAGEID_UPDATEALARMSTATE to RF task to not
 				 * write the successful firmware initialization in the register files */
 			}
 #else /* 1 != BACKUP_RESTORE_FLASH */
@@ -280,8 +280,7 @@ uint8_t ui8status = CROSSRFID_SUCCESSCODE;
 		case KERNEL_MESSAGEID_HOWMUCHTIMEYOURUN :	/* outgoing way*/
 		case KERNEL_MESSAGEID_HOWMANYTIMEYOURUN :
 		case KERNEL_MESSAGEID_CALIBRATION :
-		case KERNEL_MESSAGEID_LOG :
-		case KERNEL_MESSAGEID_COMPUTEFFT :
+
 			/* transfers the message to Serial task, firmware initialization in progress */
 			//xQueueSend (sKernel_QueuePointer.pRFtaskQueue,&sQueueItems, pdFALSE);
 			ui8status = CROSSRFID_MESSAGETOBEPOSTED;
@@ -305,14 +304,22 @@ uint8_t ui8status = CROSSRFID_SUCCESSCODE;
 			/* TODO */
 		break;
 
-		case KERNEL_MESSAGEID_MEASUREREADY :
-
+		case KERNEL_MESSAGEID_LOG :
+		case KERNEL_MESSAGEID_COMPUTEFFT :
 			ui8status = CROSSRFID_MESSAGETOBEPOSTED;
-			if (KERNEL_SERIALTASKID == kernel_ashunt[KERNEL_SHUNTID_MEASUREREADY])
+			if (KERNEL_RFFRONTENDTASKID == kernel_ashunt[KERNEL_SHUNTID_LOGREADY])
+			{
+				pQueueItems->urecvsender = KERNEL_CREATE_RECANDSEND (KERNEL_RFFRONTENDTASKID,KERNEL_SENSORTASKID);
+			}
+			else
 			{
 				pQueueItems->urecvsender = KERNEL_CREATE_RECANDSEND (KERNEL_SERIALTASKID,KERNEL_SENSORTASKID);
 			}
-			else if (KERNEL_RFFRONTENDTASKID == kernel_ashunt[KERNEL_SHUNTID_MEASUREREADY])
+		break;
+		case KERNEL_MESSAGEID_MEASUREREADY :
+
+			ui8status = CROSSRFID_MESSAGETOBEPOSTED;
+			if (KERNEL_RFFRONTENDTASKID == kernel_ashunt[KERNEL_SHUNTID_MEASUREREADY])
 			{
 				pQueueItems->urecvsender = KERNEL_CREATE_RECANDSEND (KERNEL_RFFRONTENDTASKID,KERNEL_SENSORTASKID);
 			}
